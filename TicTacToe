@@ -1,0 +1,164 @@
+# Игра крестики-нолики с компьютером
+# Поле 3х3
+
+class Cell():
+
+    def __init__(self):
+        self.value = 0
+
+    def __bool__(self):
+        """Если клетка свободна, то возвращаем True"""
+        return not bool(self.value)
+
+class TicTacToe:
+    from random import randint
+
+    FREE_CELL = 0  # свободная клетка
+    HUMAN_X = 1  # крестик (игрок - человек)
+    COMPUTER_O = 2  # нолик (игрок - компьютер)
+
+    def __init__(self):
+        # создаем матрицу
+        self.pole = tuple(tuple(Cell() for _ in range(3)) for _ in range(3))
+        self.is_human_win = False
+        self.is_computer_win = False
+        self.is_draw = False
+
+    def init(self):
+        """Новая игра"""
+        self.pole = tuple(tuple(Cell() for _ in range(3)) for _ in range(3))
+        self.is_human_win = False
+        self.is_computer_win = False
+        self.is_draw = False
+
+    @property
+    def is_human_win(self):
+        return self.__is_human_win
+
+    @is_human_win.setter
+    def is_human_win(self, flag):
+        self.__is_human_win = flag
+
+    @property
+    def is_computer_win(self):
+        return self.__is_computer_win
+
+    @is_computer_win.setter
+    def is_computer_win(self, flag):
+        self.__is_computer_win = flag
+
+    @property
+    def is_draw(self):
+        return self.__is_draw
+
+    @is_draw.setter
+    def is_draw(self, flag):
+        self.__is_draw = flag
+
+    def __check_index(self, idx_list):
+        """проверяем индексы обращения к полю"""
+        row = idx_list[0]
+        col = idx_list[1]
+        print(row, col)
+        if type(row) != int or type(col) != int or row not in range(0, len(self.pole)) or col not in range(0, len(
+                self.pole[0])):
+            raise IndexError("некорректно указанные индексы")
+
+    def __getitem__(self, item):
+        """считывание значения поля"""
+        self.__check_index(item)
+        return self.pole[item[0]][item[1]].value
+
+    def __setitem__(self, key, value):
+        """задание значения поля"""
+        self.__check_index(key)
+        self.pole[key[0]][key[1]].value = value
+        self.__check_win_all()
+
+    def __bool__(self):
+        """Проверяем есть ли свободные клетки и нет ли победиделя"""
+        return bool([cell for cell in self if cell]) and not self.is_computer_win and not self.is_human_win
+
+    def __check_win(self, l):
+        for gamer in [1, 2]:
+            for row in l:
+                if all([cell.value == gamer for cell in row]):
+                    if gamer == self.HUMAN_X:
+                        self.is_human_win = True
+                    else:
+                        self.__is_computer_win = True
+                    break
+
+    def __check_win_all(self):
+        # проверяем горизонтальные строки
+        self.__check_win(self.pole)
+
+        # проверяем вертикальные строки
+        vert_pole = [[row[i] for row in self.pole] for i in range(len(self.pole[0]))]
+        self.__check_win(vert_pole)
+
+        # проверяем главную диагональ
+        main_diag = [[self.pole[i][i] for i in range(len(self.pole))]]
+        self.__check_win(main_diag)
+
+        # поверяем побочную диагональ
+        add_diag = [[self.pole[i][-1 - i] for i in range(len(self.pole))]]
+        self.__check_win(add_diag)
+
+        if not bool([cell for cell in self if cell]):
+            self.is_draw = False
+
+    def show(self):
+        print("---------------------------------------")
+        for row in self.pole:
+            print(*(cell.value for cell in row))
+            # print()
+        print("---------------------------------------")
+
+    def __iter__(self):
+        """Итератор чтобы проходить по всем клеткам последовательно"""
+        for i in range(len(self.pole)):
+            for j in range(len(self.pole)):
+                yield self.pole[i][j]
+
+    def human_go(self):
+        """Ход человека"""
+        print("Введите координаты клетки - 2 цифры через пробел от 0 до 2")
+        coords = [int(dig) for dig in input().split()]
+        is_pass = False
+        while not is_pass:
+            if self.__getitem__(coords):
+                print("Клетка занята, введите другие координаты")
+                coords = [int(dig) for dig in input().split()]
+            else:
+                self.__setitem__(coords, self.HUMAN_X)
+                is_pass = True
+
+    def computer_go(self):
+        """Ход компьютера"""
+        all_free_cells = [cell for cell in self if cell]
+        all_free_cells[randint(0, len(all_free_cells) - 1)].value = self.COMPUTER_O
+        self.__check_win_all()
+
+# проверка работы
+game = TicTacToe()
+game.init()
+step_game = 0
+while game:
+    game.show()
+
+    if step_game % 2 == 0:
+        game.human_go()
+    else:
+        game.computer_go()
+
+    step_game += 1
+
+
+game.show()
+if game.is_human_win:
+    print("Поздравляем! Вы победили!")
+elif game.is_computer_win:
+    print("Все получится, со временем")
+else:
+    print("Ничья.")
